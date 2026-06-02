@@ -147,6 +147,9 @@ activemq-data/
 # SageMath parsed files
 *.sage.py
 
+# Chroma persistent vector store (rebuilt from corpus by src/ingest.py)
+data/chroma/
+
 # Environments
 .env
 .envrc

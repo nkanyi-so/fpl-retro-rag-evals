@@ -17,11 +17,15 @@ actually scored), so we can grade the system on results, not vibes.
 
 ### Status (honest)
 
-- ✅ **Retrieval-eval layer — built this session.** Are the right chunks fetched?
-  Plus a few code assertions and one LLM-as-judge for answer quality.
+- ✅ **Retrieval-eval layer — built.** Are the right chunks fetched? Plus code
+  assertions for temporal integrity. Aggregate hit@5 0.875, recall@5 0.812.
+- ✅ **Generation + answer-quality eval — built.** RAG generation (retrieve →
+  ground → answer) plus an LLM-as-judge scoring groundedness and correctness over
+  the 8 golden cases: aggregate **groundedness 5.00/5, correctness 4.75/5** (read
+  the [limitation](#eval-methodology) below before trusting those numbers).
 - 🚧 **Decision-quality eval — in progress (next session).** Did retrieved context
   produce more captain points than a baseline? This is the headline deliverable; the
-  retrieval layer is the foundation it stands on.
+  retrieval and answer-quality layers are the foundation it stands on.
 
 ## Critical invariant — temporal integrity
 
@@ -52,9 +56,34 @@ architecture choice.
 
 ## Eval Methodology
 ### Retrieval eval
+Are the right chunks fetched? hit@5 / recall@5 against hand-labelled relevant
+doc-ids, run with the temporal filter off then on, plus a hard assertion that no
+retrieved note post-dates its gameweek deadline. See [Failure Modes](#failure-modes-found).
+
 ### Code assertions
-### LLM-as-judge
+Temporal integrity is enforced in code, not assumed — the retrieval eval fails
+loudly if any note dated on/after a case's deadline is returned under the filter.
+
+### LLM-as-judge (answer-quality eval)
+The RAG generates a captaincy answer (retrieve → ground → answer via Claude Haiku),
+then an LLM-as-judge scores it 1–5 on **groundedness** (every claim supported by the
+provided notes) and **correctness** (pick + reasoning align with the reference
+answer). Over the 8 golden cases: aggregate **groundedness 5.00/5, correctness
+4.75/5**, with every judge verdict passing pydantic validation.
+
+> **Limitation — do not trust these numbers yet.** The scores skew high, and the
+> setup explains why: the judge is the **same model class (Haiku) grading a Haiku
+> answer against a synthetic corpus**. That invites a known LLM-as-judge failure
+> mode — leniency and self-consistency bias (a model rates output that looks like
+> its own more favourably). Near-perfect groundedness on a corpus written to be
+> easy to ground in is weak evidence of real answer quality. **Next step before
+> these numbers mean anything: validate the judge against human labels** — score a
+> sample by hand, measure judge↔human agreement, and only then report judge scores
+> as a quality signal.
+
 ### Decision-quality eval (next session)
+The headline deliverable: did the retrieved context lead to more captain points than
+a baseline, graded against what actually happened in 2025–26?
 
 ## Failure Modes Found
 
@@ -82,6 +111,17 @@ dominated instead (hit@5 = 0, both filter modes). GW19 retrieved only one of its
 two relevant notes (recall = 0.50), missing `gw19-fixture-congestion`. These are
 limits of the embedding search, independent of the temporal filter, and are left as
 documented findings rather than tuned away.
+
+**3. Retrieval miss → honest refusal, not a hallucination (grounding working as
+designed).** The GW12 retrieval miss above could have produced a confident wrong
+answer — the model knows plenty about the 2025–26 season from pretraining. Instead,
+because the system prompt forces grounding in the retrieved notes only, the RAG
+answered *"The provided notes do not contain enough information to decide"* and
+listed what it would need, rather than inventing a pick from its own knowledge. The
+judge scored that refusal 5/5 on both dimensions. This is the intended failure
+behaviour: a retrieval gap surfaces as an honest "I don't know," not a fabricated
+recommendation — which is exactly what you want from a decision-support system whose
+whole premise is temporal integrity.
 
 These numbers are illustrative, not statistical — an 8-question golden set (spanning
 12 ground-truth notes) is enough to expose failure modes, not to support

@@ -2,4 +2,5 @@ chromadb
 sentence-transformers
 anthropic
 pydantic
+pyyaml
 python-dotenv

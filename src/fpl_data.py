@@ -24,9 +24,8 @@ ROOT = Path(__file__).resolve().parent.parent
 FPL_DIR = ROOT / "data" / "fpl"
 
 # Positions that are realistic captain options (captains are ~always outfield
-# attackers; used for the template leader and the random-captain floor pool).
+# attackers; used for the random-captain floor pool).
 ATTACKING_TYPES = {3, 4}  # MID, FWD
-OUTFIELD_TYPES = {2, 3, 4}  # DEF, MID, FWD
 
 
 @lru_cache(maxsize=1)
@@ -174,23 +173,27 @@ def points_to_date(element_id: int, gameweek: int) -> int:
     return sum(points(element_id, gw) for gw in range(1, gameweek))
 
 
+@lru_cache(maxsize=1)
+def _events() -> dict[int, dict]:
+    return {e["id"]: e for e in _bootstrap()["events"]}
+
+
 def template_pick(gameweek: int) -> int:
     """The 'always-captain-template' baseline pick for `gameweek`.
 
-    Defined as the season-to-date points leader among outfield players (the
-    entrenched premium everyone owns). GW1 has no prior points, so it falls back
-    to the highest-priced attacker. Both signals are pre-deadline.
+    Defined as the MOST-CAPTAINED player that gameweek — the crowd's actual
+    armband, straight from the FPL API's `events[].most_captained`. This is the
+    truest "what the crowd does" captaincy baseline.
+
+    An earlier definition (season-to-date points leader) was also considered and
+    rejected: it answers "who has been best" rather than "who did the crowd
+    captain", and the two diverge at GW1 (points-leader Haaland vs crowd's Salah).
+    `most_captained` is preferred over `most_selected` (highest-owned overall)
+    because the decision under test is captaincy, not ownership — at GW1 the
+    most-owned player was Palmer, whom almost nobody captained.
     """
-    if gameweek > 1:
-        leaders = {
-            pid: points_to_date(pid, gameweek)
-            for pid, e in _players().items()
-            if e["element_type"] in OUTFIELD_TYPES
-        }
-        return max(leaders, key=leaders.get)
-    attackers = {
-        pid: e["now_cost"]
-        for pid, e in _players().items()
-        if e["element_type"] in ATTACKING_TYPES
-    }
-    return max(attackers, key=attackers.get)
+    e = _events()[gameweek]
+    pid = e.get("most_captained")
+    if pid is None:
+        raise KeyError(f"no most_captained recorded for GW{gameweek}")
+    return int(pid)

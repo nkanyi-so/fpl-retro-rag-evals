@@ -8,8 +8,9 @@ lead to a *better decision*, measured in real captain points?
 
 Strategies, each producing one captain pick per gameweek:
   - rag       : retrieve real (fpl-derived) notes -> Claude picks a captain.
-  - template  : the entrenched premium (season-to-date points leader). The brutal
-                "just captain the best player every week" default.
+  - template  : the most-captained player that GW (the crowd's actual armband,
+                from the FPL API). The brutal "just captain what everyone else
+                captains" default.
   - ceiling   : perfect hindsight — the actual top scorer that GW (upper bound).
   - floor     : expected points of a random pick from the starter pool (lower bound).
 

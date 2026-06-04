@@ -7,22 +7,20 @@ question that matters for a decision-support system: did the retrieved context
 lead to a *better decision*, measured in real captain points?
 
 Strategies, each producing one captain pick per gameweek:
-  - rag       : retrieve real (fpl-derived) notes -> Claude picks a captain.
+  - rag       : retrieve real (fpl-derived) notes -> Claude returns decision support
+                AND a single FORCED pick (+confidence). We grade the forced pick.
   - template  : the most-captained player that GW (the crowd's actual armband,
                 from the FPL API). The brutal "just captain what everyone else
                 captains" default.
   - ceiling   : perfect hindsight — the actual top scorer that GW (upper bound).
   - floor     : expected points of a random pick from the starter pool (lower bound).
 
-Reliability — MAJORITY VOTING. The RAG pick is not deterministic, even at
-temperature=0: on even-handed notes the model's confident-vs-decline boolean drifts
-run to run. A single pass is therefore an unreliable measurement. So for the RAG
-strategy we run the pick K times (default 5) per GW and take the MAJORITY vote, with
-two first-class outputs:
-  - the majority pick (a committed player, or ABSTAIN if "decline" is the plurality);
-  - the ABSTENTION RATE — how often the model declined to commit. This is treated as
-    a real confidence signal, not noise, and reported per GW. Abstain wins ties (if
-    the model cannot decisively commit, the decision is "no pick").
+Reliability — MAJORITY VOTING + CONFIDENCE. The RAG output is not deterministic even
+at temperature=0, so a single pass is an unreliable measurement. The system no longer
+abstains: it always emits a forced pick plus a 0–1 confidence. For each GW we run it
+K times (default 5) and take the MAJORITY-vote forced pick; the per-GW AVERAGE
+CONFIDENCE and the vote share are recorded as data (confidence is never used to drop
+a pick). Forcing the pick is what makes even close calls land on a stable captain.
 The baselines (template/ceiling/floor) are deterministic, so they are not voted.
 
 Honesty guards baked into the metrics:
@@ -32,8 +30,9 @@ Honesty guards baked into the metrics:
   - DIVERGENCE-ONLY DIFFERENTIAL (the headline): on the GWs where RAG's majority pick
     DIFFERS from the template, did it outscore the template? This strips out the free
     credit for agreeing with the obvious pick.
-  - A GW whose majority vote is ABSTAIN is a distinct bucket, never scored as 0
-    football points.
+  - CONFIDENCE-ANNOTATED: each divergent result carries the model's average
+    confidence. A win on a low-confidence divergence is weaker evidence than a win on
+    a high-confidence one.
 
 n is tiny (a 3-GW slice). These numbers expose whether the harness works and tell a
 directional story; they support NO statistical claim. See the README caveat.
@@ -55,9 +54,8 @@ from rag import answer  # noqa: E402
 GOLDEN = Path(__file__).resolve().parent / "golden.jsonl"
 DECISION_GWS = [1, 8, 15]  # the real, temporally-clean slice built this session
 REAL_SOURCE = "fpl-derived"
-K_VOTES = 5  # RAG pick runs per GW; majority vote stabilises the nondeterministic pick
-ABSTAIN = "ABSTAIN"  # vote label for a declined / unresolved pick
-LOW_CONF_ABSTAIN = 0.40  # >= this abstention rate => the majority pick is untrustworthy
+K_VOTES = 5  # RAG runs per GW; majority vote stabilises the nondeterministic pick
+LOW_CONFIDENCE = 0.50  # avg confidence below this => a divergence win is weaker evidence
 
 
 class GoldenCase(BaseModel):
@@ -81,37 +79,40 @@ def _named(pid: int | None) -> str:
     return fpl_data.web_name(pid) if pid is not None else "—"
 
 
-def _vote_label(label) -> str:
-    return "abstain" if label == ABSTAIN else _named(label)
+def _conf_label(c: float) -> str:
+    return "high" if c >= 0.8 else "medium" if c >= LOW_CONFIDENCE else "low"
 
 
 def vote_rag_pick(question: str, gameweek: int, k: int = K_VOTES) -> dict:
-    """Run the RAG pick `k` times and majority-vote the result.
+    """Run the forced RAG pick `k` times and majority-vote it.
 
-    Each run votes for an element_id (confident, resolved pick) or ABSTAIN
-    (declined or unresolved). The majority pick is the most-voted player; if
-    abstentions equal or outnumber the top player's votes, the GW abstains (the
-    model could not decisively commit). Abstention rate is returned as a
-    first-class signal, not folded away.
+    The system never abstains: every run yields a forced pick (+confidence). We
+    majority-vote the forced pick (ties broken by lowest element_id for
+    determinism) and record the per-GW average confidence and vote share as data.
+    A forced pick whose name does not resolve to an element_id is dropped from the
+    vote (a rare resolution error, not an abstention).
     """
-    votes: list = []
+    votes: list[int] = []
+    confidences: list[float] = []
+    close_flags: list[bool] = []
     for _ in range(k):
         a = answer(question, gameweek, source=REAL_SOURCE)
-        votes.append(a.captain_element_id if (a.captain_confident and a.captain_element_id) else ABSTAIN)
+        d = a.decision
+        confidences.append(d.confidence)
+        close_flags.append(d.is_close)
+        if d.forced_pick_element_id is not None:
+            votes.append(d.forced_pick_element_id)
 
     tally = Counter(votes)
-    abstain_count = tally.get(ABSTAIN, 0)
-    picks = {label: n for label, n in tally.items() if label != ABSTAIN}
-    best_pick = max(picks, key=picks.get) if picks else None
-    best_count = picks.get(best_pick, 0) if best_pick is not None else 0
-
-    # abstain wins ties: a non-decisive model means "no pick".
-    majority_pid = best_pick if best_count > abstain_count else None
+    # majority pick; tie-break on lowest element_id so the result is deterministic.
+    best_count = max(tally.values()) if tally else 0
+    majority_pid = min((p for p, n in tally.items() if n == best_count), default=None)
     return {
         "tally": tally,
         "majority_pid": majority_pid,
-        "abstain_rate": abstain_count / k,
-        "is_strict_majority": best_count > k / 2,
+        "vote_share": best_count / k if k else 0.0,
+        "avg_confidence": sum(confidences) / len(confidences) if confidences else 0.0,
+        "is_close_rate": sum(close_flags) / len(close_flags) if close_flags else 0.0,
         "k": k,
     }
 
@@ -123,9 +124,9 @@ def run(k: int = K_VOTES) -> None:
     for case in cases:
         gw = case.gameweek
         vote = vote_rag_pick(case.question, gw, k=k)
-        rag_pid = vote["majority_pid"]  # None => majority abstained
-        abstained = rag_pid is None
-        rag_pts = None if abstained else fpl_data.points(rag_pid, gw)
+        rag_pid = vote["majority_pid"]
+        unresolved = rag_pid is None  # forced name never resolved (rare)
+        rag_pts = None if unresolved else fpl_data.points(rag_pid, gw)
 
         tmpl_pid = fpl_data.template_pick(gw)
         tmpl_pts = fpl_data.points(tmpl_pid, gw)
@@ -133,7 +134,7 @@ def run(k: int = K_VOTES) -> None:
         ceil_pid, ceil_pts = fpl_data.top_scorer(gw)
         floor_pts, floor_n = fpl_data.pool_mean_points(gw)
 
-        diverged = (not abstained) and (rag_pid != tmpl_pid)
+        diverged = (not unresolved) and (rag_pid != tmpl_pid)
 
         rows.append(
             {
@@ -141,7 +142,7 @@ def run(k: int = K_VOTES) -> None:
                 "vote": vote,
                 "rag_pid": rag_pid,
                 "rag_pts": rag_pts,
-                "abstained": abstained,
+                "unresolved": unresolved,
                 "tmpl_pid": tmpl_pid,
                 "tmpl_pts": tmpl_pts,
                 "ceil_pid": ceil_pid,
@@ -155,47 +156,44 @@ def run(k: int = K_VOTES) -> None:
     # ---- per-gameweek detail ----
     print("=" * 74)
     print(f"DECISION-QUALITY EVAL — {len(rows)} gameweeks ({DECISION_GWS}), real corpus, "
-          f"majority vote over K={k}")
+          f"forced pick, majority vote over K={k}")
     print("=" * 74)
     for r in rows:
         c = r["case"]
-        tally_str = ", ".join(f"{_vote_label(l)}×{n}" for l, n in r["vote"]["tally"].most_common())
-        low_conf = r["vote"]["abstain_rate"] >= LOW_CONF_ABSTAIN
-        if r["abstained"]:
-            rag_line = f"MAJORITY ABSTAINED  (votes: {tally_str})"
-        else:
-            flags = []
-            if not r["vote"]["is_strict_majority"]:
-                flags.append("plurality, not strict majority")
-            if low_conf:
-                flags.append("LOW CONFIDENCE — high abstention, pick not bankable")
-            suffix = f"  [{'; '.join(flags)}]" if flags else ""
-            rag_line = f"{_named(r['rag_pid'])} -> {r['rag_pts']} pts  (votes: {tally_str}){suffix}"
+        v = r["vote"]
+        tally_str = ", ".join(f"{_named(p)}×{n}" for p, n in v["tally"].most_common())
+        conf = v["avg_confidence"]
         print(f"\nGW{c.gameweek}: {c.question}")
-        print(f"  RAG majority  : {rag_line}")
-        print(f"  abstention    : {r['vote']['abstain_rate']:.0%} of {k} runs declined to commit")
+        if r["unresolved"]:
+            print(f"  RAG forced    : UNRESOLVED (forced name never matched a player; votes: {tally_str})")
+        else:
+            print(f"  RAG forced    : {_named(r['rag_pid'])} -> {r['rag_pts']} pts  "
+                  f"(votes: {tally_str}; vote share {v['vote_share']:.0%})")
+        print(f"  avg confidence: {conf:.2f} ({_conf_label(conf)})  | "
+              f"flagged close in {v['is_close_rate']:.0%} of runs")
         print(f"  template pick : {_named(r['tmpl_pid'])}  -> {r['tmpl_pts']} pts")
         print(f"  ceiling (best): {_named(r['ceil_pid'])}  -> {r['ceil_pts']} pts")
         print(f"  random floor  : {r['floor_pts']:.1f} pts (mean over {r['floor_n']} starters)")
-        if r["abstained"]:
-            verdict = "n/a (majority abstained — no scoreable pick)"
+        if r["unresolved"]:
+            verdict = "n/a (forced pick unresolved)"
         elif not r["diverged"]:
             verdict = f"AGREES with template (both {_named(r['tmpl_pid'])}) — no marginal credit"
         else:
             delta = r["rag_pts"] - r["tmpl_pts"]
-            verdict = f"DIVERGED — RAG {r['rag_pts']} vs template {r['tmpl_pts']}  (delta {delta:+d})"
+            verdict = (f"DIVERGED — RAG {r['rag_pts']} vs template {r['tmpl_pts']} "
+                       f"(delta {delta:+d}), {_conf_label(conf)} confidence")
         print(f"  -> {verdict}")
 
     # ---- aggregates ----
-    scored = [r for r in rows if not r["abstained"]]
+    scored = [r for r in rows if not r["unresolved"]]
     diverged = [r for r in scored if r["diverged"]]
     agreed = [r for r in scored if not r["diverged"]]
 
     print("\n" + "=" * 74)
     print("AGGREGATE")
     print("=" * 74)
-    print(f"  abstention rate (mean): "
-          f"{sum(r['vote']['abstain_rate'] for r in rows) / len(rows):.0%} across {len(rows)} GWs")
+    print(f"  mean confidence       : "
+          f"{sum(r['vote']['avg_confidence'] for r in rows) / len(rows):.2f} across {len(rows)} GWs")
 
     if scored:
         rag_total = sum(r["rag_pts"] for r in scored)
@@ -203,8 +201,7 @@ def run(k: int = K_VOTES) -> None:
         ceil_total = sum(r["ceil_pts"] for r in scored)
         floor_total = sum(r["floor_pts"] for r in scored)
         n = len(scored)
-        print(f"  scored gameweeks      : {n} (of {len(rows)}; "
-              f"{len(rows) - n} majority-abstained)")
+        print(f"  scored gameweeks      : {n} (of {len(rows)})")
         print(f"  total captain points  : RAG {rag_total} | template {tmpl_total} | "
               f"ceiling {ceil_total} | floor {floor_total:.1f}")
         print(f"  mean per GW            : RAG {rag_total/n:.1f} | template {tmpl_total/n:.1f} | "
@@ -213,33 +210,29 @@ def run(k: int = K_VOTES) -> None:
         wins = sum(1 for r in scored if r["rag_pts"] > r["tmpl_pts"])
         losses = sum(1 for r in scored if r["rag_pts"] < r["tmpl_pts"])
         ties = sum(1 for r in scored if r["rag_pts"] == r["tmpl_pts"])
-        print(f"  RAG vs template record: {wins}W-{losses}L-{ties}T (scored GWs only)")
+        print(f"  RAG vs template record: {wins}W-{losses}L-{ties}T")
 
-        print(f"  agreement rate        : {len(agreed)}/{n} scored GWs RAG echoed the template "
+        print(f"  agreement rate        : {len(agreed)}/{n} GWs RAG echoed the template "
               f"({len(agreed)/n:.0%})")
     else:
-        print("  no scored gameweeks (every GW majority-abstained)")
+        print("  no scored gameweeks")
 
     print("-" * 74)
-    print("DIVERGENCE-ONLY DIFFERENTIAL (headline — RAG's marginal value)")
+    print("DIVERGENCE-ONLY DIFFERENTIAL (headline — RAG's marginal value, confidence-weighted)")
     if diverged:
         diff = sum(r["rag_pts"] - r["tmpl_pts"] for r in diverged)
-        low_conf_any = False
         for r in diverged:
-            lc = r["vote"]["abstain_rate"] >= LOW_CONF_ABSTAIN
-            low_conf_any = low_conf_any or lc
-            flag = f"  [LOW CONFIDENCE: {r['vote']['abstain_rate']:.0%} abstained]" if lc else ""
+            conf = r["vote"]["avg_confidence"]
             print(f"  GW{r['case'].gameweek}: {_named(r['rag_pid'])} {r['rag_pts']} "
                   f"vs template {_named(r['tmpl_pid'])} {r['tmpl_pts']}  "
-                  f"= {r['rag_pts'] - r['tmpl_pts']:+d}{flag}")
+                  f"= {r['rag_pts'] - r['tmpl_pts']:+d}  [{_conf_label(conf)} confidence {conf:.2f}]")
         print(f"  net differential over {len(diverged)} divergent GW(s): {diff:+d} pts")
-        if low_conf_any:
-            print("  NOT BANKABLE: the differential rests on a GW where RAG abstains "
-                  "frequently — it materialises only in batches where the model commits.")
+        if any(r["vote"]["avg_confidence"] < LOW_CONFIDENCE for r in diverged):
+            print("  NOTE: a divergence won at LOW confidence is weaker evidence — the model "
+                  "flagged it a close call. Read the differential alongside the confidence.")
     else:
-        print("  RAG's majority pick never diverged from the template (or it abstained "
-              "where it might have): zero scored divergent GWs, so this slice measures "
-              "no marginal RAG value.")
+        print("  RAG's majority pick never diverged from the template — zero divergent GWs, "
+              "so this slice measures no marginal RAG value (only agreement).")
 
     print("-" * 74)
     print("CAVEAT: n=3. Directional only — no statistical claim. The divergence-only "

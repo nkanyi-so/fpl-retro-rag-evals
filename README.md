@@ -23,9 +23,12 @@ actually scored), so we can grade the system on results, not vibes.
   ground → answer) plus an LLM-as-judge scoring groundedness and correctness over
   the 8 golden cases: aggregate **groundedness 5.00/5, correctness 4.75/5** (read
   the [limitation](#eval-methodology) below before trusting those numbers).
-- 🚧 **Decision-quality eval — in progress (next session).** Did retrieved context
-  produce more captain points than a baseline? This is the headline deliverable; the
-  retrieval and answer-quality layers are the foundation it stands on.
+- ✅ **Decision-quality eval — first slice built.** Did RAG-informed captain picks
+  beat baselines on *real* points, over a real, temporally-clean corpus (GW1/8/15)?
+  Headline metric is the divergence-only differential: **+10 pts on the one GW where
+  RAG diverged from the crowd** (n=3, directional only). See
+  [Decision-Quality Eval](#decision-quality-eval-first-slice). Still to do: more GWs,
+  a manually-sourced corpus for injury/DGW cases, and the remaining baselines.
 
 ## Critical invariant — temporal integrity
 
@@ -81,9 +84,112 @@ answer). Over the 8 golden cases: aggregate **groundedness 5.00/5, correctness
 > sample by hand, measure judge↔human agreement, and only then report judge scores
 > as a quality signal.
 
-### Decision-quality eval (next session)
-The headline deliverable: did the retrieved context lead to more captain points than
-a baseline, graded against what actually happened in 2025–26?
+### Decision-quality eval
+The headline deliverable — its own section below: did the retrieved context lead to
+more captain points than a baseline, graded against what actually happened in
+2025–26? See [Decision-Quality Eval (first slice)](#decision-quality-eval-first-slice).
+
+## Decision-Quality Eval (first slice)
+
+The headline eval, and the only one that asks the question that matters for a
+decision-support system: not "did we fetch good chunks?" but **did the retrieved
+context lead to a better *decision* — more real captain points — than the
+baselines?** This is a first, deliberately small slice (n=3 gameweeks). It is
+**directional only; it supports no statistical claim.**
+
+### What it measures
+For GW1, GW8 and GW15, each strategy picks one captain; we score it on the points
+that player *actually* scored that gameweek in 2025–26. The honest headline is the
+**divergence-only differential**: RAG is credited only on the gameweeks where its
+pick *differs* from the crowd's. Agreeing with the obvious pick earns nothing — that
+strips out the trap of RAG "getting credit" for captaining the player everyone
+already captains.
+
+### Method
+- **Real corpus.** GW1/8/15 notes are rebuilt from real, pre-deadline FPL-API facts
+  (form-to-date, fixtures, ownership), replacing the original synthetic notes. They
+  are temporally clean by construction (data sliced *at* each deadline) and carry
+  `source: fpl-derived`; retrieval for this eval is restricted to that source so no
+  synthetic note can leak into a graded decision.
+- **Outcome oracle.** A committed snapshot of the finished 2025–26 season
+  (`data/fpl/`) supplies the answer key — per-gameweek points per player. Outcome is
+  the *grader*, applied after the deadline; it is the answer key, not temporal
+  leakage. The temporal invariant constrains the corpus (inputs), never the oracle.
+- **Strategies / baselines.**
+  - *RAG* — retrieve the real notes, Claude picks a captain (returned structured;
+    a declined or unresolvable pick is a distinct extraction-error bucket, never a
+    0-point football outcome).
+  - *Template (most-captained)* — the crowd's actual armband that gameweek, from the
+    FPL API's `most_captained`. The "just captain what everyone else captains"
+    default, and a genuinely strong one.
+  - *Ceiling* — perfect hindsight, the actual top scorer that GW (upper bound).
+  - *Floor* — expected points of a random pick from the starter pool (lower bound).
+
+> **Baseline definition (explicit).** The template is defined as **most-captained**
+> (the crowd's armband). An earlier definition — the *season-to-date points leader* —
+> was considered and rejected: it answers "who has been best", not "what the crowd
+> does", and the two diverge at GW1 (points-leader Haaland vs the crowd's Salah).
+> `most_captained` is also preferred over `most_selected` (highest-owned overall),
+> because the decision under test is captaincy: at GW1 the most-*owned* player was
+> Palmer, whom almost nobody captained.
+
+### Results
+
+| GW | RAG pick | RAG pts | Template (most-captained) | Tmpl pts | Ceiling | RAG vs template |
+|----|----------|--------:|---------------------------|---------:|---------|-----------------|
+| 1  | Salah    | 8       | Salah                     | 8        | Ballard 17 | tie (agreed) |
+| 8  | Haaland  | 13      | Haaland                   | 13       | James 18   | tie (agreed) |
+| 15 | Foden    | 12      | Haaland                   | 2        | B.Fernandes 18 | **+10 (diverged)** |
+
+**Aggregate (committed picks):** RAG **33** vs template **23** (ceiling 53, floor
+9.3); record **1W–0L–2T**; **agreement rate 67%** (RAG echoed the crowd on 2 of 3
+GWs); **divergence-only differential +10**, entirely from GW15.
+
+**Lead with the honesty:** RAG added value in exactly one place — GW15, where the
+notes surfaced that the premium (Haaland) had cooled while an in-form midfielder
+(Foden) shared the same elite fixture; RAG diverged to Foden and won +10. Everywhere
+else it just echoed the crowd and added nothing. And the GW1 result is not the clean
+win it might look like: RAG's pick (Salah, 8) matched the crowd, but in hindsight an
+*uncaptained* Haaland scored 13 — a miss neither RAG nor the crowd baseline caught.
+So RAG ties the crowd at GW1 rather than beating it, and both were beaten by the
+obvious alternative.
+
+> **Reliability caveat (a methodology finding).** The RAG pick is **not fully
+> deterministic even at `temperature=0`**. The pick *direction* is stable (GW1 always
+> Salah, GW8 always Haaland, GW15 always Foden — never a wrong third option), but on
+> the two deliberately even-handed notes the model's *confidence* wavers: over five
+> runs it declined to commit on GW1 (2/5) and GW15 (3/5). A robust version of this
+> eval should aggregate over runs (e.g. majority vote) rather than trust a single
+> pass; today's harness is single-run.
+
+### Why this needed a real corpus (the synthetic-corpus finding)
+Rebuilding GW1/8/15 against real data exposed that **all three original synthetic
+notes contained real factual errors**:
+- **GW1** claimed Man City were *home to Burnley* with Haaland the obvious pick — in
+  reality City were *away at Wolves*, and *Salah* (home to Bournemouth) was the
+  most-owned template.
+- **GW8** had Haaland facing a *tougher away trip* and pitched *Mbeumo of Brentford*
+  as the differential — Haaland was *home* to Everton, and Mbeumo is a *Man Utd*
+  player in 2025–26.
+- **GW15** featured *Cole Palmer* as the in-form midfielder — by the real data the
+  hottest mid was *Foden*, not Palmer.
+
+This is concrete evidence for the project's core claim: **decision-quality numbers
+computed on an invented corpus are meaningless** — a synthetic note that happens to
+align (or misalign) with reality grades nothing. It is what motivated the real-corpus
+rebuild, and it is why this eval reports only the three real GWs.
+
+### Limitations & next gate
+- **n = 3.** Directional only; no significance. The +10 differential rests on a
+  single divergent gameweek.
+- **Single-run nondeterminism** (above) — the eval should aggregate over runs.
+- **GW5 (injury pivot) and GW10 (DGW) are not built.** The API snapshot cannot
+  reconstruct pre-deadline *injury/availability* news (those fields are live, not
+  point-in-time), and the synthetic DGW calendar does not match the real season's
+  doubles. Both need a manually-sourced, date-verified corpus.
+- **Two baselines unbuilt:** an xG-based pick, and a no-RAG LLM — the latter
+  hindsight-contaminated (the model's training spans part of 2025–26), so it must be
+  reported as an upper bound, not a fair peer.
 
 ## Failure Modes Found
 

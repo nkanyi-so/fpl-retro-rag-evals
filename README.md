@@ -23,12 +23,14 @@ actually scored), so we can grade the system on results, not vibes.
   ground → answer) plus an LLM-as-judge scoring groundedness and correctness over
   the 8 golden cases: aggregate **groundedness 5.00/5, correctness 4.75/5** (read
   the [limitation](#eval-methodology) below before trusting those numbers).
-- ✅ **Decision-quality eval — first slice built (with an honest null result).** Over
-  a real, temporally-clean corpus (GW1/8/15), scored on *real* captain points with the
-  pick taken by **majority vote over K runs** and an explicit **abstention rate**. The
-  finding: RAG never picks the wrong player, but abstains ~half the time on even-handed
-  notes — so it shows **no reliable marginal value over the crowd baseline yet** (an
-  earlier single-run "+10" did not survive majority voting). See
+- ✅ **Decision-quality eval — first slice built.** Over a real, temporally-clean
+  corpus (GW1/8/15), scored on *real* captain points. The system gives **decision
+  support** (top candidates + grounded case + confidence) and a single **forced pick**
+  graded by **majority vote over K runs**, with the model's **confidence** recorded as
+  data. Forcing the pick makes even close calls land on a stable captain (GW1 & GW15
+  both 15/15 over a 15-run check). Result: RAG's divergence-only differential is
+  **+15 over 2 divergent GWs (GW1 +5, GW15 +10) — but both at *medium* confidence and
+  flagged close**, so it is directional evidence, appropriately weakened. See
   [Decision-Quality Eval](#decision-quality-eval-first-slice). Still to do: more GWs,
   a manually-sourced corpus for injury/DGW cases, and the remaining baselines.
 
@@ -107,11 +109,14 @@ pick *differs* from the crowd's. Agreeing with the obvious pick earns nothing �
 strips out the trap of RAG "getting credit" for captaining the player everyone
 already captains.
 
-Because the RAG pick is **not deterministic even at `temperature=0`** (see below),
-the pick for each GW is taken by **majority vote over K runs (default K=5)**, and the
-**abstention rate** — how often the model declines to commit — is reported as a
-first-class metric, not smoothed away. A GW whose majority vote is "abstain" yields
-no scoreable pick.
+The system gives **decision support**, not a bare pick or a refusal (see
+[the product layer](#decision-support-the-user-facing-answer)). For grading it always
+also emits a single **forced pick** ("if you had to commit, who?") plus a 0–1
+**confidence**. Because LLM output is **not deterministic even at `temperature=0`**,
+the forced pick for each GW is taken by **majority vote over K runs (default K=5)**,
+and the model's **average confidence** is recorded as data — never used to drop a
+pick. A win on a low-confidence divergence is weaker evidence than a high-confidence
+one, so the headline differential is reported confidence-annotated.
 
 ### Method
 - **Real corpus.** GW1/8/15 notes are rebuilt from real, pre-deadline FPL-API facts
@@ -124,9 +129,9 @@ no scoreable pick.
   the *grader*, applied after the deadline; it is the answer key, not temporal
   leakage. The temporal invariant constrains the corpus (inputs), never the oracle.
 - **Strategies / baselines.**
-  - *RAG* — retrieve the real notes, Claude picks a captain (returned structured;
-    a declined or unresolvable pick is a distinct extraction-error bucket, never a
-    0-point football outcome).
+  - *RAG* — retrieve the real notes; Claude returns a structured decision (candidates
+    + grounded cases + close-call flag + confidence) and a single forced pick, scored
+    by majority vote over K runs.
   - *Template (most-captained)* — the crowd's actual armband that gameweek, from the
     FPL API's `most_captained`. The "just captain what everyone else captains"
     default, and a genuinely strong one.
@@ -141,42 +146,71 @@ no scoreable pick.
 > because the decision under test is captaincy: at GW1 the most-*owned* player was
 > Palmer, whom almost nobody captained.
 
-### Results (majority vote, with abstention as a first-class metric)
+### Decision support: the user-facing answer
 
-The decisive measurement is the **abstention rate**, estimated over a larger sample
-(15 runs/GW). When RAG *does* commit it is never wrong — the pick direction is rock
-stable — but on the two deliberately even-handed notes it declines to commit roughly
-half the time, so the majority pick itself flips batch to batch.
+On a close call the product does **not** collapse to a bare pick or a refusal. It
+returns a structured, JSON-serializable object (so a UI can render it directly): the
+top candidates with the grounded case for each, a close-call flag, an explicit
+confidence, and the forced pick. Example, GW15 (a genuine form-vs-pedigree call):
 
-| GW | When it commits | Abstention (15 runs) | Majority pick | RAG pts | Template | Tmpl pts | Verdict |
-|----|-----------------|---------------------:|---------------|--------:|----------|---------:|---------|
-| 1  | Salah (rarely Haaland) | ~33% | Salah *or* abstain (borderline) | 8 | Salah | 8 | tie / abstain |
-| 8  | Haaland (always)       | **0%** | Haaland (stable) | 13 | Haaland | 13 | tie (agreed) |
-| 15 | Foden (always)         | **~73%** | **abstain** (commits Foden only in lucky batches) | 12 | Haaland | 2 | abstain / (+10 if committed) |
+```json
+{
+  "candidates": [
+    {"name": "Phil Foden", "element_id": 414,
+     "case": "Form midfielder: 37 pts in the last four GWs vs Haaland's 22; same home
+              fixture vs promoted Sunderland, ~20% owned — a differential with elite
+              fixture backing."},
+    {"name": "Erling Haaland", "element_id": 430,
+     "case": "The usual premium: season points-leader (120), same fixture, but cooled
+              to 22 pts in four GWs and ~70% owned — the template, not the form pick."}
+  ],
+  "is_close": true,
+  "confidence": 0.62,
+  "forced_pick_name": "Phil Foden",
+  "forced_pick_element_id": 414,
+  "rationale": "Form-versus-pedigree, same elite fixture. Foden's recent form outpaces
+                a cooled Haaland and offers differential value; confidence is moderate
+                because Haaland's pedigree and fixture still carry weight."
+}
+```
 
-**The headline does not survive majority voting.** GW8 is the only stable GW, and it
-agrees with the crowd — zero marginal value. GW1's majority is a coin-flip between
-matching the crowd (Salah, a tie) and abstaining. GW15 — the *only* gameweek where
-RAG would beat the crowd (+10, Foden over a cooled Haaland) — is exactly where it
-abstains most (~73%): so the **divergence-only differential collapses to ≈0 scored
-divergent GWs under reliable voting.** The +10 appears only in minority batches where
-GW15 happens to commit (e.g. a K=11 run landed Foden ×6 / abstain ×5 → +10; a K=5 run
-landed abstain ×5 → 0). The single-run +10 reported earlier was a lucky pass, not a
-bankable result.
+The eval grades only `forced_pick_element_id`; `confidence` and `is_close` are
+recorded as data.
 
-**Lead with the honesty:** on these three GWs RAG demonstrates **no reliable marginal
-value over the crowd**. It never captains the *wrong* player, and on GW15 it clearly
-*can* see the better pick (Foden, every time it commits) — but it lacks the confidence
-to commit there often enough for a reliability-respecting eval to credit it. The
-trustworthy output is the abstention rate, not a points differential.
+### Results (forced pick, majority vote over K=5, confidence-annotated)
+
+Forcing the pick removes the instability seen under abstention: over a 15-run check
+the forced majority is unanimous on both close GWs (GW1 Haaland 15/15, GW15 Foden
+15/15). Confidence still correctly flags the close calls.
+
+| GW | Forced majority pick | Vote share | Avg confidence | RAG pts | Template (most-captained) | Tmpl pts | Verdict |
+|----|----------------------|-----------:|----------------|--------:|---------------------------|---------:|---------|
+| 1  | Haaland | 100% | 0.55 (medium, close 100%) | 13 | Salah   | 8  | **+5 (diverged)** |
+| 8  | Haaland | 100% | 0.85 (high, close 0%)     | 13 | Haaland | 13 | tie (agreed) |
+| 15 | Foden   | 100% | 0.62 (medium, close 100%) | 12 | Haaland | 2  | **+10 (diverged)** |
+
+**Aggregate:** RAG **38** vs template **23** (ceiling 53, floor 9.2); record
+**2W–0L–1T**; agreement rate 33%; **divergence-only differential +15** (GW1 +5,
+GW15 +10).
+
+**Lead with the honesty:** the +15 is real but **both divergence wins are *medium*
+confidence and the model flagged each a close call 100% of the time** — so this is
+directional evidence, not a confident verdict. GW1 is instructive: forced to commit,
+RAG picks Haaland (kindest fixture, away at Wolves) over the crowd's Salah and wins +5
+— but it also *tells you* it's a coin-flip (conf 0.55). The one high-confidence GW
+(GW8, 0.85) is exactly the one where RAG agrees with the crowd and adds nothing. So:
+RAG beats the crowd where it diverges, but only on calls it is itself unsure about.
 
 > **Methodology finding — single-run LLM evals are unreliable even at
-> `temperature=0`.** Output drift is not removed by zero temperature. Majority voting
-> over K runs plus an explicit **abstention rate** is the mitigation — but its value
-> here is *diagnostic*: it did not manufacture a stable pick, it *exposed* that the
-> pick on even-handed notes is a near-coin-flip and that the earlier headline rested
-> on one lucky pass. An eval that reports a single LLM output as a result is reporting
-> noise; the abstention rate is what should be trusted.
+> `temperature=0`; the fix is forced pick + majority vote + a confidence signal.**
+> Output drift is not removed by zero temperature. An earlier design let the model
+> *abstain* on close calls; the abstention rate hovered near 50% on even-handed notes,
+> so a single pass (and even a K=5 majority) was a coin-flip and a one-off "+10" was a
+> lucky pass. Forcing a single "if you had to commit" pick and majority-voting it over
+> K runs yields a **stable, gradeable** decision (here unanimous over 15 runs), while
+> the model's **confidence** carries the close-call signal that abstention used to —
+> as data, not as a refusal. Report the differential *and* the confidence; a
+> low-confidence win is weak evidence.
 
 ### Why this needed a real corpus (the synthetic-corpus finding)
 Rebuilding GW1/8/15 against real data exposed that **all three original synthetic
@@ -196,13 +230,14 @@ align (or misalign) with reality grades nothing. It is what motivated the real-c
 rebuild, and it is why this eval reports only the three real GWs.
 
 ### Limitations & next gate
-- **n = 3.** Directional only; no significance. There is currently **no reliable
-  marginal-value result** — the one potentially-divergent GW (15) is dominated by
-  abstention.
-- **High abstention on even-handed notes.** The model is right when it commits but
-  declines ~half the time on GW1/GW15. Whether to read that as appropriate caution or
-  as a prompting weakness (and whether to push it to commit) is an open question for
-  the next iteration. Majority voting now exposes this rather than hiding it.
+- **n = 3.** Directional only; no significance. The +15 rests on two GWs, both won at
+  *medium* confidence — read it as a signal, not a verdict.
+- **Low-confidence divergences.** RAG beats the crowd only on calls it flags as close
+  (conf ~0.55–0.62); its one high-confidence GW is an agreement. More GWs are needed
+  to see whether RAG wins divergences it is actually *confident* about.
+- **Confidence is uncalibrated.** The 0–1 score is the model's self-report, not a
+  validated probability. Calibrating it against outcomes (do 0.8-confidence picks win
+  more often than 0.6 ones?) is future work.
 - **GW5 (injury pivot) and GW10 (DGW) are not built.** The API snapshot cannot
   reconstruct pre-deadline *injury/availability* news (those fields are live, not
   point-in-time), and the synthetic DGW calendar does not match the real season's

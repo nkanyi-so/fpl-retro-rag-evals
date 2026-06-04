@@ -92,6 +92,7 @@ def answer(question: str, gameweek: int, k: int = 5, source: str | None = None) 
     response = client.messages.parse(
         model=ANSWER_MODEL,
         max_tokens=1024,
+        temperature=0,  # reproducible eval runs; the pick must not drift run-to-run
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
         output_format=RagOutput,

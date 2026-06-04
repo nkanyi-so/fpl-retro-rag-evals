@@ -40,12 +40,18 @@ def retrieve(
     gameweek: int,
     k: int = 5,
     apply_temporal_filter: bool = True,
+    source: str | None = None,
 ) -> list[dict]:
     """Return up to `k` chunks for `question`, ranked by similarity.
 
     When `apply_temporal_filter` is True, only chunks dated strictly before GW
     `gameweek`'s deadline are eligible (Chroma `where`: date_int < deadline). When
     False, no temporal filter is applied (used to show what leaks in without it).
+
+    When `source` is given, only chunks with that `source` metadata are eligible.
+    The decision-quality eval uses this to restrict context to the real,
+    temporally-clean (`fpl-derived`) notes so no synthetic note can leak into a
+    graded decision.
 
     Each result: {doc_id, score, date_int, text}. `score` is cosine similarity
     (1 - distance), higher is closer.
@@ -54,9 +60,12 @@ def retrieve(
     collection = get_collection()
     query_embedding = model.encode(question, normalize_embeddings=True).tolist()
 
-    where = None
+    clauses = []
     if apply_temporal_filter:
-        where = {"date_int": {"$lt": deadline_int(gameweek)}}
+        clauses.append({"date_int": {"$lt": deadline_int(gameweek)}})
+    if source is not None:
+        clauses.append({"source": {"$eq": source}})
+    where = None if not clauses else (clauses[0] if len(clauses) == 1 else {"$and": clauses})
 
     result = collection.query(
         query_embeddings=[query_embedding],

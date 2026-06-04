@@ -114,6 +114,7 @@ def ingest(corpus_dir: Path = CORPUS_DIR) -> int:
                 "gameweek": fm.gameweek,
                 "type": fm.type,
                 "date_int": fm.date_int,
+                "source": fm.source,
             }
         )
 

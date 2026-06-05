@@ -18,21 +18,24 @@ actually scored), so we can grade the system on results, not vibes.
 ### Status (honest)
 
 - ✅ **Retrieval-eval layer — built.** Are the right chunks fetched? Plus code
-  assertions for temporal integrity. Aggregate hit@5 0.875, recall@5 0.812.
+  assertions for temporal integrity. Aggregate (12 cases) hit@5 0.917, recall@5 0.875.
 - ✅ **Generation + answer-quality eval — built.** RAG generation (retrieve →
   ground → answer) plus an LLM-as-judge scoring groundedness and correctness over
   the 8 golden cases: aggregate **groundedness 5.00/5, correctness 4.75/5** (read
   the [limitation](#eval-methodology) below before trusting those numbers).
-- ✅ **Decision-quality eval — first slice built.** Over a real, temporally-clean
-  corpus (GW1/8/15), scored on *real* captain points. The system gives **decision
-  support** (top candidates + grounded case + confidence) and a single **forced pick**
-  graded by **majority vote over K runs**, with the model's **confidence** recorded as
-  data. Forcing the pick makes even close calls land on a stable captain (GW1 & GW15
-  both 15/15 over a 15-run check). Result: RAG's divergence-only differential is
-  **+15 over 2 divergent GWs (GW1 +5, GW15 +10) — but both at *medium* confidence and
-  flagged close**, so it is directional evidence, appropriately weakened. See
-  [Decision-Quality Eval](#decision-quality-eval-first-slice). Still to do: more GWs,
-  a manually-sourced corpus for injury/DGW cases, and the remaining baselines.
+- ✅ **Decision-quality eval — widened to n=8.** Over a real, temporally-clean
+  corpus (GW1/5/6/8/9/11/13/15), scored on *real* captain points. The system gives
+  **decision support** (top candidates + grounded case + confidence) and a single
+  **forced pick** graded by **majority vote over K runs**, with the model's
+  **confidence** recorded as data. Result: RAG's divergence-only differential is
+  **+19 over 3 divergent GWs (GW1 +5, GW5 +4, GW15 +10) — all at *medium* confidence
+  and flagged close**. The widening also enabled a first **confidence-calibration
+  check**, whose finding is blunt: **higher confidence did *not* track better
+  outcomes** — the high-confidence bucket is all template agreements, two of which
+  *busted* (GW9, GW11), and normalized "capture" is essentially flat across buckets
+  (0.40 high vs 0.43 medium). See [Decision-Quality Eval](#decision-quality-eval-n8).
+  Still to do: a manually-sourced corpus for injury cases, a real double-gameweek
+  case (GW26/33/36 are reconstructable), and the remaining baselines.
 
 ## Critical invariant — temporal integrity
 
@@ -91,19 +94,20 @@ answer). Over the 8 golden cases: aggregate **groundedness 5.00/5, correctness
 ### Decision-quality eval
 The headline deliverable — its own section below: did the retrieved context lead to
 more captain points than a baseline, graded against what actually happened in
-2025–26? See [Decision-Quality Eval (first slice)](#decision-quality-eval-first-slice).
+2025–26? See [Decision-Quality Eval (n=8)](#decision-quality-eval-n8).
 
-## Decision-Quality Eval (first slice)
+## Decision-Quality Eval (n=8)
 
 The headline eval, and the only one that asks the question that matters for a
 decision-support system: not "did we fetch good chunks?" but **did the retrieved
 context lead to a better *decision* — more real captain points — than the
-baselines?** This is a first, deliberately small slice (n=3 gameweeks). It is
-**directional only; it supports no statistical claim.**
+baselines?** This is a small slice (n=8 gameweeks: GW1/5/6/8/9/11/13/15). It is
+**directional only; it supports no statistical claim** — but n=8 is enough to add a
+first **confidence-calibration** read on top of the points differential.
 
 ### What it measures
-For GW1, GW8 and GW15, each strategy picks one captain; we score it on the points
-that player *actually* scored that gameweek in 2025–26. The honest headline is the
+For each of the eight gameweeks, each strategy picks one captain; we score it on the
+points that player *actually* scored that gameweek in 2025–26. The honest headline is the
 **divergence-only differential**: RAG is credited only on the gameweeks where its
 pick *differs* from the crowd's. Agreeing with the obvious pick earns nothing — that
 strips out the trap of RAG "getting credit" for captaining the player everyone
@@ -119,11 +123,19 @@ pick. A win on a low-confidence divergence is weaker evidence than a high-confid
 one, so the headline differential is reported confidence-annotated.
 
 ### Method
-- **Real corpus.** GW1/8/15 notes are rebuilt from real, pre-deadline FPL-API facts
-  (form-to-date, fixtures, ownership), replacing the original synthetic notes. They
-  are temporally clean by construction (data sliced *at* each deadline) and carry
-  `source: fpl-derived`; retrieval for this eval is restricted to that source so no
-  synthetic note can leak into a graded decision.
+- **Real corpus, fact-first.** All eight GW notes are built from real, pre-deadline
+  FPL-API facts (form-to-date, fixtures/FDR, point-in-time ownership, the crowd's
+  `most_captained`) reconstructed by a deterministic builder (`src/fpl_facts.py`), so
+  every claim traces to a reproducible source rather than memory — the question and
+  reference follow the facts, never the reverse. They carry `source: fpl-derived` and
+  retrieval for this eval is restricted to that source so no synthetic note can leak
+  into a graded decision. Two integrity constraints shape the corpus: (1) ownership is
+  only quoted for the ten players whose per-gameweek `selected` history is in the
+  snapshot (the API wipes on rollover), so candidate sets are drawn from them; (2) the
+  temporal cutoff uses the **real** bootstrap deadlines (`data/deadlines.json` was
+  regenerated from the snapshot), and every note's date and form window were verified
+  to precede its real deadline — a fix that re-dated the GW15 notes, which had
+  post-dated the real deadline under the earlier synthetic calendar.
 - **Outcome oracle.** A committed snapshot of the finished 2025–26 season
   (`data/fpl/`) supplies the answer key — per-gameweek points per player. Outcome is
   the *grader*, applied after the deadline; it is the answer key, not temporal
@@ -179,27 +191,59 @@ recorded as data.
 
 ### Results (forced pick, majority vote over K=5, confidence-annotated)
 
-Forcing the pick removes the instability seen under abstention: over a 15-run check
-the forced majority is unanimous on both close GWs (GW1 Haaland 15/15, GW15 Foden
-15/15). Confidence still correctly flags the close calls.
+Forcing the pick yields a stable, gradeable decision: across all eight GWs the forced
+majority was **unanimous (100% vote share at K=5)**, and confidence still flags the
+close calls (all three divergences flagged close 100% of runs; the agreements 0%).
 
-| GW | Forced majority pick | Vote share | Avg confidence | RAG pts | Template (most-captained) | Tmpl pts | Verdict |
-|----|----------------------|-----------:|----------------|--------:|---------------------------|---------:|---------|
+| GW | Forced pick | Vote | Avg confidence | RAG pts | Template (most-captained) | Tmpl pts | Verdict |
+|----|-------------|-----:|----------------|--------:|---------------------------|---------:|---------|
 | 1  | Haaland | 100% | 0.55 (medium, close 100%) | 13 | Salah   | 8  | **+5 (diverged)** |
+| 5  | Haaland | 100% | 0.61 (medium, close 100%) | 9  | Salah   | 5  | **+4 (diverged)** |
+| 6  | Haaland | 100% | 0.95 (high, close 0%)     | 16 | Haaland | 16 | tie (agreed) |
 | 8  | Haaland | 100% | 0.85 (high, close 0%)     | 13 | Haaland | 13 | tie (agreed) |
-| 15 | Foden   | 100% | 0.62 (medium, close 100%) | 12 | Haaland | 2  | **+10 (diverged)** |
+| 9  | Haaland | 100% | 0.80 (high, close 0%)     | 2  | Haaland | 2  | tie (agreed — **bust**) |
+| 11 | Haaland | 100% | 0.88 (high, close 0%)     | 4  | Haaland | 4  | tie (agreed — **bust**) |
+| 13 | Haaland | 100% | 0.65 (medium, close 80%)  | 2  | Haaland | 2  | tie (agreed — **bust**) |
+| 15 | Foden   | 100% | 0.63 (medium, close 100%) | 12 | Haaland | 2  | **+10 (diverged)** |
 
-**Aggregate:** RAG **38** vs template **23** (ceiling 53, floor 9.2); record
-**2W–0L–1T**; agreement rate 33%; **divergence-only differential +15** (GW1 +5,
-GW15 +10).
+**Aggregate:** RAG **71** vs template **52** (ceiling 139, floor 25.3); mean per GW
+RAG **8.9** vs template **6.5**; record **3W–0L–5T**; agreement rate **62%**;
+**divergence-only differential +19** (GW1 +5, GW5 +4, GW15 +10).
 
-**Lead with the honesty:** the +15 is real but **both divergence wins are *medium*
-confidence and the model flagged each a close call 100% of the time** — so this is
-directional evidence, not a confident verdict. GW1 is instructive: forced to commit,
-RAG picks Haaland (kindest fixture, away at Wolves) over the crowd's Salah and wins +5
-— but it also *tells you* it's a coin-flip (conf 0.55). The one high-confidence GW
-(GW8, 0.85) is exactly the one where RAG agrees with the crowd and adds nothing. So:
-RAG beats the crowd where it diverges, but only on calls it is itself unsure about.
+**Lead with the honesty:** the +19 is real but **all three divergence wins are
+*medium* confidence and the model flagged each a close call** — directional evidence,
+not a confident verdict. The pattern from the first slice holds and sharpens at n=8:
+RAG beats the crowd *only where it diverges*, and it diverges *only on calls it is
+itself unsure about*. Every high-confidence GW is an agreement with the Haaland
+template — and three of those agreements **busted** (GW9 2 pts at conf 0.80, GW11 4
+pts at conf 0.88, GW13 2 pts at conf 0.65). The system's confident calls are precisely
+the ones where it adds nothing over "just captain Haaland", and being confident did
+not protect them from busting.
+
+### Confidence calibration (first check)
+
+The n=8 sample is the first that can ask whether the model's **self-reported
+confidence tracks decision quality**. Because the vs-template delta is ~0 on the weeks
+RAG agrees with the crowd (a structural confound — the agreements are all
+high-confidence), the cross-bucket signal is **normalized capture**: where the forced
+pick lands between the random-pick floor (0.0) and the perfect-hindsight ceiling (1.0)
+that GW.
+
+| Confidence bucket | GWs | n | beat/match template | mean capture |
+|-------------------|-----|--:|--------------------:|-------------:|
+| high (≥0.80)      | 6, 8, 9, 11 | 4 | 100% | **0.40** |
+| medium (0.50–0.79)| 1, 5, 13, 15 | 4 | 100% | **0.43** |
+| low (<0.50)       | — | 0 | — | — |
+
+**Finding: confidence is not calibrated to outcome.** Capture is essentially flat —
+in fact *mildly inverted* (medium 0.43 ≥ high 0.40) — so higher-confidence picks did
+**not** score better. The high-confidence bucket contains both the clean anchors
+(GW6 16 pts) and outright busts (GW9 2, GW11 4); the model's 0.8–0.9 confidence on the
+Haaland template carried no extra outcome quality. This is consistent with the
+divergence story above: the signal lives in the medium-confidence *divergences*, not
+in the high-confidence *agreements*. n=8 makes this a directional read, not a
+calibrated probability — but it is concrete motivation for the calibration work the
+first slice could only flag as future work.
 
 > **Methodology finding — single-run LLM evals are unreliable even at
 > `temperature=0`; the fix is forced pick + majority vote + a confidence signal.**
@@ -227,28 +271,37 @@ notes contained real factual errors**:
 This is concrete evidence for the project's core claim: **decision-quality numbers
 computed on an invented corpus are meaningless** — a synthetic note that happens to
 align (or misalign) with reality grades nothing. It is what motivated the real-corpus
-rebuild, and it is why this eval reports only the three real GWs.
+rebuild, and it is why this eval reports only `fpl-derived` GWs (now eight), each note
+traceable to the deterministic fact builder.
 
 ### Limitations & next gate
-- **n = 3.** Directional only; no significance. The +15 rests on two GWs, both won at
-  *medium* confidence — read it as a signal, not a verdict.
-- **Low-confidence divergences.** RAG beats the crowd only on calls it flags as close
-  (conf ~0.55–0.62); its one high-confidence GW is an agreement. More GWs are needed
-  to see whether RAG wins divergences it is actually *confident* about.
-- **Confidence is uncalibrated.** The 0–1 score is the model's self-report, not a
-  validated probability. Calibrating it against outcomes (do 0.8-confidence picks win
-  more often than 0.6 ones?) is future work.
-- **GW5 (injury pivot) and GW10 (DGW) are not built.** The API snapshot cannot
-  reconstruct pre-deadline *injury/availability* news (those fields are live, not
-  point-in-time), and the synthetic DGW calendar does not match the real season's
-  doubles. Both need a manually-sourced, date-verified corpus.
+- **n = 8.** Wider than the first slice but still directional; no significance. The
+  +19 rests on three GWs, all won at *medium* confidence — a signal, not a verdict.
+- **Wins are confined to low-confidence divergences.** RAG beats the crowd only on the
+  calls it flags as close (conf ~0.55–0.63); every high-confidence GW is a template
+  agreement, and three of those *busted*. The open question is now sharper: does RAG
+  ever win a divergence it is actually *confident* about? At n=8, it has not faced one.
+- **Confidence is not calibrated — now measured, not just asserted.** The first
+  calibration check (capture 0.40 high vs 0.43 medium, mildly inverted) shows the 0–1
+  self-report does not track outcome quality. Turning this into a calibrated
+  probability — and testing whether a *re-weighted* confidence would help — is the next
+  step. The current score remains data, never used to drop a pick.
+- **Template entrenchment limits the test.** From GW3 on, the crowd's `most_captained`
+  is Haaland almost every week, so "divergence" almost always means "not Haaland". The
+  eval genuinely measures *when to deviate from the template*, but a richer set of
+  divergent shapes (multiple distinct template players) would stress it harder.
+- **Injury pivots and double-gameweeks still deferred.** The snapshot cannot
+  reconstruct pre-deadline *injury/availability* news (live fields, not point-in-time),
+  so injury cases need a manually-sourced corpus. Real double-gameweeks, by contrast,
+  *are* reconstructable (the snapshot has doubles at GW26/33/36) — they were deferred
+  by choice, not capability, to keep this widening to one decision shape.
 - **Two baselines unbuilt:** an xG-based pick, and a no-RAG LLM — the latter
   hindsight-contaminated (the model's training spans part of 2025–26), so it must be
   reported as an upper bound, not a fair peer.
 
 ## Failure Modes Found
 
-The retrieval eval (8 captaincy cases, k=5) surfaced two distinct classes of
+The retrieval eval (12 captaincy cases, k=5) surfaced two distinct classes of
 failure. They are reported as found — the corpus was **not** adjusted to make any
 of these numbers look better, because surfacing real failure modes is the point of
 the project.
@@ -259,7 +312,7 @@ top-5 made *entirely* of future-dated notes — later-gameweek captaincy preview
 that embed close to the question but could not have been known at the GW1 deadline
 — and missed the one correct note completely (hit@5 = 0 for that case). Turning the
 filter ON restored the correct note and, across the whole set, *raised* the
-aggregate scores: hit@5 0.750 → 0.875 and recall@5 0.625 → 0.812. The metrics
+aggregate scores: hit@5 0.833 → 0.917 and recall@5 0.792 → 0.875. The metrics
 improve under filtering precisely because the future notes had been outranking the
 legitimate earlier note. This is the temporal-integrity claim, demonstrated rather
 than asserted.
@@ -284,6 +337,5 @@ behaviour: a retrieval gap surfaces as an honest "I don't know," not a fabricate
 recommendation — which is exactly what you want from a decision-support system whose
 whole premise is temporal integrity.
 
-These numbers are illustrative, not statistical — an 8-question golden set (spanning
-12 ground-truth notes) is enough to expose failure modes, not to support
-significance claims.
+These numbers are illustrative, not statistical — a 12-question golden set is enough
+to expose failure modes, not to support significance claims.

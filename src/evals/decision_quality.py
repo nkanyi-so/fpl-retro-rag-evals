@@ -34,8 +34,10 @@ Honesty guards baked into the metrics:
     confidence. A win on a low-confidence divergence is weaker evidence than a win on
     a high-confidence one.
 
-n is tiny (a 3-GW slice). These numbers expose whether the harness works and tell a
-directional story; they support NO statistical claim. See the README caveat.
+n is small (an 8-GW slice). These numbers expose whether the harness works and tell a
+directional story; they support NO statistical claim. They also feed a confidence
+CALIBRATION read (does higher confidence track better outcomes?) — see _calibration
+and the README caveat.
 """
 
 from __future__ import annotations
@@ -52,7 +54,7 @@ import fpl_data  # noqa: E402
 from rag import answer  # noqa: E402
 
 GOLDEN = Path(__file__).resolve().parent / "golden.jsonl"
-DECISION_GWS = [1, 8, 15]  # the real, temporally-clean slice built this session
+DECISION_GWS = [1, 5, 6, 8, 9, 11, 13, 15]  # the real, temporally-clean slice (n=8)
 REAL_SOURCE = "fpl-derived"
 K_VOTES = 5  # RAG runs per GW; majority vote stabilises the nondeterministic pick
 LOW_CONFIDENCE = 0.50  # avg confidence below this => a divergence win is weaker evidence
@@ -234,9 +236,73 @@ def run(k: int = K_VOTES) -> None:
         print("  RAG's majority pick never diverged from the template — zero divergent GWs, "
               "so this slice measures no marginal RAG value (only agreement).")
 
+    # ---- confidence calibration ----
+    if scored:
+        _calibration(scored)
+
     print("-" * 74)
-    print("CAVEAT: n=3. Directional only — no statistical claim. The divergence-only "
-          "differential is the honest signal; total points credit RAG for obvious picks.")
+    print(f"CAVEAT: n={len(rows)}. Still directional — no statistical claim. The "
+          "divergence-only differential is the honest marginal signal; total points "
+          "credit RAG for obvious picks.")
+
+
+def _capture(r: dict) -> float | None:
+    """Normalized pick quality: where the forced pick lands between the random-pick
+    floor (0.0) and the perfect-hindsight ceiling (1.0) that gameweek. Unlike the
+    vs-template delta (which is ~0 on the weeks RAG agrees with the crowd), this is
+    an ABSOLUTE quality signal that is comparable across confidence buckets."""
+    span = r["ceil_pts"] - r["floor_pts"]
+    if span <= 0:
+        return None
+    return (r["rag_pts"] - r["floor_pts"]) / span
+
+
+def _calibration(scored: list[dict]) -> None:
+    """Does the model's self-reported confidence track decision quality?
+
+    Buckets the scored GWs by average confidence (low/medium/high) and reports, per
+    bucket: how often the pick beat-or-matched the crowd template, and the mean
+    normalized capture (floor=0, ceiling=1). The calibration question is whether
+    higher-confidence buckets show higher quality. n is tiny, so this is a read, not
+    a result — and there is a structural confound to state plainly (below)."""
+    print("-" * 74)
+    print("CONFIDENCE CALIBRATION (do higher-confidence picks score better?)")
+    order = ["high", "medium", "low"]
+    buckets: dict[str, list[dict]] = {b: [] for b in order}
+    for r in scored:
+        buckets[_conf_label(r["vote"]["avg_confidence"])].append(r)
+
+    print(f"  {'bucket':<8}{'GWs':>5}{'n':>4}{'beat/match tmpl':>17}"
+          f"{'mean RAG':>10}{'mean tmpl':>11}{'mean capture':>14}")
+    rows_summary = []
+    for b in order:
+        rs = buckets[b]
+        if not rs:
+            print(f"  {b:<8}{'—':>5}{0:>4}{'—':>17}{'—':>10}{'—':>11}{'—':>14}")
+            rows_summary.append((b, None))
+            continue
+        gws = "+".join(str(r["case"].gameweek) for r in rs)
+        n = len(rs)
+        bm = sum(1 for r in rs if r["rag_pts"] >= r["tmpl_pts"]) / n
+        mean_rag = sum(r["rag_pts"] for r in rs) / n
+        mean_tmpl = sum(r["tmpl_pts"] for r in rs) / n
+        caps = [c for c in (_capture(r) for r in rs) if c is not None]
+        mean_cap = sum(caps) / len(caps) if caps else float("nan")
+        print(f"  {b:<8}{gws:>5}{n:>4}{bm:>16.0%}{mean_rag:>10.1f}{mean_tmpl:>11.1f}"
+              f"{mean_cap:>14.2f}")
+        rows_summary.append((b, mean_cap))
+
+    # monotonicity read on capture (high should exceed low if confidence is calibrated)
+    present = [(b, c) for b, c in rows_summary if c is not None]
+    if len(present) >= 2:
+        caps_in_order = [c for _, c in present]  # already high->low
+        mono = all(caps_in_order[i] >= caps_in_order[i + 1] for i in range(len(caps_in_order) - 1))
+        print(f"  capture monotonic with confidence (high>=...>=low)? "
+              f"{'yes' if mono else 'no'}  [{' >= '.join(f'{b}:{c:.2f}' for b, c in present)}]")
+    print("  CONFOUND: high-confidence GWs are largely template AGREEMENTS (RAG picks "
+          "the crowd's Haaland), so their vs-template delta is ~0 by construction; the "
+          "divergences sit in the lower buckets. Read 'capture' (absolute quality), not "
+          "the vs-template delta, across buckets — and read it as directional at this n.")
 
 
 if __name__ == "__main__":

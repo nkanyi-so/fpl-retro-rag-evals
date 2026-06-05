@@ -1,19 +1,35 @@
 # Corpus
 
-## This vertical slice: synthetic corpus
+The corpus in `data/corpus/` is now **mixed**, by design, and the `source` frontmatter
+field tells the two apart.
 
-For the current vertical slice the corpus in `data/corpus/` is **synthetic** — every
-note is labelled `source: synthetic` in its frontmatter. It is hand-built to exercise
-and validate the retrieval pipeline and the temporal-integrity filter: it contains the
-ground-truth answer notes for the golden set, plus deliberate distractors (semantically
-near but wrong) and at least one later-gameweek note that an earlier-gameweek question
-would semantically match — so retrieval can be wrong and the temporal filter has
-something real to exclude.
+## `fpl-derived` notes — the decision-quality corpus (real)
 
-Temporal integrity: every note is captured as-of a pre-deadline date and frozen — no
-content is added after the gameweek it informs (no hindsight). The synthetic calendar is
-internally consistent (each note dated a few days before its gameweek's deadline) even
-though the dates are not real-world-accurate.
+The decision-quality eval runs only on `source: fpl-derived` notes. There are eight,
+one decision per gameweek (GW1/5/6/8/9/11/13/15), each built **fact-first** from the
+frozen FPL snapshot by `src/fpl_facts.py`: form-to-date over a verified-complete
+window, fixture + FDR, point-in-time ownership, and the crowd's `most_captained`. The
+question and reference follow the reconstructed facts, never the reverse.
+
+Two integrity constraints shape this set:
+- **Ownership** is only quoted for the ten players whose per-gameweek `selected`
+  history is in the snapshot (the live API wipes on rollover, so it cannot be
+  refetched). Candidate sets are drawn from those ten — which are, conveniently, the
+  season's captaincy-relevant players.
+- **Temporal cutoff** uses the *real* bootstrap deadlines (`data/deadlines.json` is
+  regenerated from the snapshot). Every note's date and form window were verified to
+  precede its real deadline. Note `source` reflects what is in *this snapshot's*
+  reality, which can differ from real-world rosters — follow the data, not memory.
+
+## `synthetic` notes — retrieval-eval distractors
+
+The remaining notes are `source: synthetic`: hand-built distractors that exercise the
+retrieval pipeline and the temporal-integrity filter — semantically-near-but-wrong
+notes, and later-gameweek notes that an earlier-gameweek question matches (so the
+temporal filter has something real to exclude). They are dated a few days before their
+gameweek (and re-dated where the corrected real calendar required it) so they stay
+pre-deadline, but their content is illustrative, not real. They are excluded from the
+decision-quality eval by the `source` filter so no synthetic note can grade a decision.
 
 ## Upgrade path: real corpus (decision-quality phase)
 

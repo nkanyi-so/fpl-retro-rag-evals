@@ -1,7 +1,7 @@
 ---
 doc_id: gw15-form-watch
 gameweek: 15
-date: 2025-12-09
+date: 2025-12-05
 source: fpl-derived
 team: Manchester City
 players: ["Phil Foden"]

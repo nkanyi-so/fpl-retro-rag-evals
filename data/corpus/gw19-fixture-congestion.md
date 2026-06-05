@@ -1,7 +1,7 @@
 ---
 doc_id: gw19-fixture-congestion
 gameweek: 19
-date: 2025-12-31
+date: 2025-12-28
 source: synthetic
 team: Manchester City
 players: ["Erling Haaland"]

@@ -1,7 +1,7 @@
 ---
 doc_id: gw15-captaincy-preview
 gameweek: 15
-date: 2025-12-10
+date: 2025-12-05
 source: fpl-derived
 team: Manchester City
 players: ["Erling Haaland", "Phil Foden"]

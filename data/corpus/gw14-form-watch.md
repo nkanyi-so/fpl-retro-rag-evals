@@ -1,7 +1,7 @@
 ---
 doc_id: gw14-form-watch
 gameweek: 14
-date: 2025-12-03
+date: 2025-12-01
 source: synthetic
 team: Tottenham Hotspur
 players: ["James Maddison"]

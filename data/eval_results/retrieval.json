@@ -1,0 +1,527 @@
+{
+  "meta": {
+    "k": 5,
+    "n_cases": 12
+  },
+  "aggregate": {
+    "off": {
+      "hit_at_k": 0.833,
+      "recall_at_k": 0.792
+    },
+    "on": {
+      "hit_at_k": 0.917,
+      "recall_at_k": 0.875
+    }
+  },
+  "temporal_assertion": {
+    "passed": true,
+    "violations": []
+  },
+  "per_case": [
+    {
+      "gw": 1,
+      "question": "Who should I captain in GW1?",
+      "relevant_doc_ids": [
+        "gw01-captaincy-preview"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw10-captaincy-preview",
+          "gw06-captaincy-fpl",
+          "gw19-captaincy-preview",
+          "gw10-double-gameweek",
+          "gw06-captaincy-preview"
+        ],
+        "scores": [
+          0.6369,
+          0.5254,
+          0.5106,
+          0.5055,
+          0.4963
+        ],
+        "hit": 0.0,
+        "recall": 0.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw01-captaincy-preview"
+        ],
+        "scores": [
+          0.4781
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 3,
+      "question": "Is it worth captaining a defender on penalties in GW3?",
+      "relevant_doc_ids": [
+        "gw03-set-piece-notes"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw10-captaincy-preview",
+          "gw08-captaincy-preview",
+          "gw06-captaincy-fpl",
+          "gw19-captaincy-preview",
+          "gw03-set-piece-notes"
+        ],
+        "scores": [
+          0.5123,
+          0.5031,
+          0.4978,
+          0.4821,
+          0.4673
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw03-set-piece-notes",
+          "gw01-captaincy-preview"
+        ],
+        "scores": [
+          0.4673,
+          0.4312
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 5,
+      "question": "Should I captain the template premium or back form into a tougher fixture in GW5?",
+      "relevant_doc_ids": [
+        "gw05-captaincy-fpl"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw06-captaincy-fpl",
+          "gw09-captaincy-fpl",
+          "gw07-fixture-notes",
+          "gw13-captaincy-fpl",
+          "gw05-captaincy-fpl"
+        ],
+        "scores": [
+          0.5055,
+          0.4609,
+          0.4582,
+          0.4512,
+          0.44
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw05-captaincy-fpl",
+          "gw01-captaincy-preview",
+          "gw04-form-watch",
+          "gw05-captaincy-preview",
+          "gw03-set-piece-notes"
+        ],
+        "scores": [
+          0.44,
+          0.3309,
+          0.2767,
+          0.2727,
+          0.257
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 6,
+      "question": "Who should I captain in GW6?",
+      "relevant_doc_ids": [
+        "gw06-captaincy-fpl"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw10-captaincy-preview",
+          "gw06-captaincy-fpl",
+          "gw06-captaincy-preview",
+          "gw19-captaincy-preview",
+          "gw08-captaincy-preview"
+        ],
+        "scores": [
+          0.606,
+          0.5659,
+          0.5392,
+          0.4888,
+          0.4855
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw06-captaincy-fpl",
+          "gw06-captaincy-preview",
+          "gw01-captaincy-preview",
+          "gw05-captaincy-fpl",
+          "gw04-form-watch"
+        ],
+        "scores": [
+          0.5659,
+          0.5392,
+          0.4755,
+          0.4298,
+          0.4166
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 8,
+      "question": "Should I captain a differential or template in GW8?",
+      "relevant_doc_ids": [
+        "gw08-captaincy-preview"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw08-captaincy-preview",
+          "gw10-captaincy-preview",
+          "gw07-fixture-notes",
+          "gw06-captaincy-fpl",
+          "gw19-captaincy-preview"
+        ],
+        "scores": [
+          0.491,
+          0.3316,
+          0.3285,
+          0.3256,
+          0.3036
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw08-captaincy-preview",
+          "gw07-fixture-notes",
+          "gw06-captaincy-fpl",
+          "gw06-captaincy-preview",
+          "gw05-captaincy-fpl"
+        ],
+        "scores": [
+          0.491,
+          0.3285,
+          0.3256,
+          0.2645,
+          0.2346
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 9,
+      "question": "Does Haaland's tougher fixture in GW9 justify captaining a differential instead?",
+      "relevant_doc_ids": [
+        "gw09-captaincy-fpl"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw09-captaincy-fpl",
+          "gw08-captaincy-preview",
+          "gw06-captaincy-fpl",
+          "gw05-captaincy-fpl",
+          "gw15-captaincy-preview"
+        ],
+        "scores": [
+          0.6295,
+          0.6065,
+          0.5862,
+          0.5549,
+          0.5292
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw09-captaincy-fpl",
+          "gw08-captaincy-preview",
+          "gw06-captaincy-fpl",
+          "gw05-captaincy-fpl",
+          "gw06-captaincy-preview"
+        ],
+        "scores": [
+          0.6295,
+          0.6065,
+          0.5862,
+          0.5549,
+          0.5116
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 10,
+      "question": "Who is the safest captain over the GW10 double gameweek?",
+      "relevant_doc_ids": [
+        "gw10-double-gameweek",
+        "gw10-captaincy-preview"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw10-captaincy-preview",
+          "gw10-double-gameweek",
+          "gw06-captaincy-fpl",
+          "gw08-captaincy-preview",
+          "gw19-captaincy-preview"
+        ],
+        "scores": [
+          0.8143,
+          0.6327,
+          0.5918,
+          0.5688,
+          0.5632
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw10-captaincy-preview",
+          "gw10-double-gameweek",
+          "gw06-captaincy-fpl",
+          "gw08-captaincy-preview",
+          "gw06-captaincy-preview"
+        ],
+        "scores": [
+          0.8143,
+          0.6327,
+          0.5918,
+          0.5688,
+          0.524
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 11,
+      "question": "Who should I captain in the GW11 Man City vs Liverpool derby?",
+      "relevant_doc_ids": [
+        "gw11-captaincy-fpl"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw11-captaincy-fpl",
+          "gw06-captaincy-fpl",
+          "gw10-captaincy-preview",
+          "gw13-captaincy-fpl",
+          "gw08-captaincy-preview"
+        ],
+        "scores": [
+          0.6672,
+          0.6269,
+          0.6105,
+          0.6067,
+          0.5926
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw11-captaincy-fpl",
+          "gw06-captaincy-fpl",
+          "gw10-captaincy-preview",
+          "gw08-captaincy-preview",
+          "gw10-double-gameweek"
+        ],
+        "scores": [
+          0.6672,
+          0.6269,
+          0.6105,
+          0.5926,
+          0.5891
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 12,
+      "question": "Captain options for GW12 after the form swing?",
+      "relevant_doc_ids": [
+        "gw12-form-watch"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw06-captaincy-fpl",
+          "gw10-captaincy-preview",
+          "gw19-captaincy-preview",
+          "gw08-captaincy-preview",
+          "gw10-double-gameweek"
+        ],
+        "scores": [
+          0.5912,
+          0.5425,
+          0.5115,
+          0.5102,
+          0.5008
+        ],
+        "hit": 0.0,
+        "recall": 0.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw06-captaincy-fpl",
+          "gw10-captaincy-preview",
+          "gw08-captaincy-preview",
+          "gw10-double-gameweek",
+          "gw04-form-watch"
+        ],
+        "scores": [
+          0.5912,
+          0.5425,
+          0.5102,
+          0.5008,
+          0.4827
+        ],
+        "hit": 0.0,
+        "recall": 0.0
+      }
+    },
+    {
+      "gw": 13,
+      "question": "Should I stick with the template premium in GW13 despite his cooled form?",
+      "relevant_doc_ids": [
+        "gw13-captaincy-fpl"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw13-captaincy-fpl",
+          "gw06-captaincy-fpl",
+          "gw15-captaincy-preview",
+          "gw09-captaincy-fpl",
+          "gw19-fixture-congestion"
+        ],
+        "scores": [
+          0.4015,
+          0.3235,
+          0.3139,
+          0.2948,
+          0.2873
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw13-captaincy-fpl",
+          "gw06-captaincy-fpl",
+          "gw09-captaincy-fpl",
+          "gw08-captaincy-preview",
+          "gw11-injury-update"
+        ],
+        "scores": [
+          0.4015,
+          0.3235,
+          0.2948,
+          0.2826,
+          0.2727
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 15,
+      "question": "Is the in-form midfielder a better captain than the usual premium in GW15?",
+      "relevant_doc_ids": [
+        "gw15-captaincy-preview",
+        "gw15-form-watch"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw15-form-watch",
+          "gw06-captaincy-fpl",
+          "gw13-captaincy-fpl",
+          "gw08-captaincy-preview",
+          "gw15-captaincy-preview"
+        ],
+        "scores": [
+          0.6219,
+          0.6068,
+          0.6011,
+          0.6,
+          0.5713
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      },
+      "on": {
+        "doc_ids": [
+          "gw15-form-watch",
+          "gw06-captaincy-fpl",
+          "gw13-captaincy-fpl",
+          "gw08-captaincy-preview",
+          "gw15-captaincy-preview"
+        ],
+        "scores": [
+          0.6219,
+          0.6068,
+          0.6011,
+          0.6,
+          0.5713
+        ],
+        "hit": 1.0,
+        "recall": 1.0
+      }
+    },
+    {
+      "gw": 19,
+      "question": "Who should I captain in the GW19 festive fixtures?",
+      "relevant_doc_ids": [
+        "gw19-fixture-congestion",
+        "gw19-captaincy-preview"
+      ],
+      "off": {
+        "doc_ids": [
+          "gw19-captaincy-preview",
+          "gw10-captaincy-preview",
+          "gw06-captaincy-fpl",
+          "gw13-captaincy-fpl",
+          "gw06-captaincy-preview"
+        ],
+        "scores": [
+          0.6771,
+          0.6498,
+          0.6078,
+          0.5786,
+          0.558
+        ],
+        "hit": 1.0,
+        "recall": 0.5
+      },
+      "on": {
+        "doc_ids": [
+          "gw19-captaincy-preview",
+          "gw10-captaincy-preview",
+          "gw06-captaincy-fpl",
+          "gw13-captaincy-fpl",
+          "gw06-captaincy-preview"
+        ],
+        "scores": [
+          0.6771,
+          0.6498,
+          0.6078,
+          0.5786,
+          0.558
+        ],
+        "hit": 1.0,
+        "recall": 0.5
+      }
+    }
+  ]
+}

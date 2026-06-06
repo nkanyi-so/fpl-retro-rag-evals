@@ -22,6 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # make src/ imp
 from retrieve import deadline_int, retrieve  # noqa: E402
 
 GOLDEN = Path(__file__).resolve().parent / "golden.jsonl"
+RESULTS_JSON = (
+    Path(__file__).resolve().parent.parent.parent / "data" / "eval_results" / "retrieval.json"
+)
 TRAP_ID = "gw06-captaincy-preview"  # later-GW note that the GW1 question matches
 K = 5
 
@@ -130,6 +133,11 @@ def run() -> None:
         print(f"    retrieved with filter ON ? {'YES — LEAK!' if in_on else 'no (correctly excluded)'}")
     print()
 
+    # ---- persist for the read-only dashboard (written before the assertion can
+    # raise, so a failing state is still captured for the dashboard) ----
+    _write_results(rows, agg, violations)
+    print(f"wrote {RESULTS_JSON.relative_to(RESULTS_JSON.parent.parent.parent)}\n")
+
     # ---- hard assertion ----
     print("TEMPORAL-INTEGRITY ASSERTION (filter ON)")
     print("-" * 72)
@@ -141,6 +149,52 @@ def run() -> None:
             f"first offender: {violations[0][1]}"
         )
     print("  PASS — no retrieved note dated on/after its case deadline.")
+
+
+def _write_results(rows: list[dict], agg, violations: list) -> None:
+    """Serialize retrieval scores + per-case rows + the temporal-assertion verdict to
+    JSON for the dashboard. Aggregates come from the same `agg` used for the printout."""
+    per_case = []
+    for r in rows:
+        c = r["case"]
+        per_case.append({
+            "gw": c.gameweek,
+            "question": c.question,
+            "relevant_doc_ids": c.relevant_doc_ids,
+            "off": {
+                "doc_ids": r["off_ids"],
+                "scores": [round(h["score"], 4) for h in r["off"]],
+                "hit": hit_at_k(r["off_ids"], c.relevant_doc_ids),
+                "recall": round(recall_at_k(r["off_ids"], c.relevant_doc_ids), 3),
+            },
+            "on": {
+                "doc_ids": r["on_ids"],
+                "scores": [round(h["score"], 4) for h in r["on"]],
+                "hit": hit_at_k(r["on_ids"], c.relevant_doc_ids),
+                "recall": round(recall_at_k(r["on_ids"], c.relevant_doc_ids), 3),
+            },
+        })
+
+    payload = {
+        "meta": {"k": K, "n_cases": len(rows)},
+        "aggregate": {
+            "off": {"hit_at_k": round(agg(hit_at_k, "off"), 3),
+                    "recall_at_k": round(agg(recall_at_k, "off"), 3)},
+            "on": {"hit_at_k": round(agg(hit_at_k, "on"), 3),
+                   "recall_at_k": round(agg(recall_at_k, "on"), 3)},
+        },
+        "temporal_assertion": {
+            "passed": not violations,
+            "violations": [
+                {"gw": gw, "doc_id": doc_id, "date_int": di, "deadline_int": dl}
+                for gw, doc_id, di, dl in violations
+            ],
+        },
+        "per_case": per_case,
+    }
+
+    RESULTS_JSON.parent.mkdir(parents=True, exist_ok=True)
+    RESULTS_JSON.write_text(json.dumps(payload, indent=2) + "\n")
 
 
 if __name__ == "__main__":

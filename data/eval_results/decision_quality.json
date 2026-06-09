@@ -1,0 +1,361 @@
+{
+  "meta": {
+    "gameweeks": [
+      1,
+      5,
+      6,
+      8,
+      9,
+      11,
+      13,
+      15
+    ],
+    "k": 5,
+    "n": 8,
+    "n_scored": 8,
+    "source": "fpl-derived",
+    "bust_pts": 4,
+    "confidence_note": "per-GW confidence is the mean over the K runs; buckets: high>=0.80, medium>=0.50, low<0.50",
+    "caveat": "n=8 \u2014 directional, no statistical claim."
+  },
+  "per_gw": [
+    {
+      "gw": 1,
+      "question": "Who should I captain in GW1?",
+      "rag_pick": "Haaland",
+      "rag_pts": 13,
+      "crowd_pick": "M.Salah",
+      "crowd_pts": 8,
+      "ceiling_pick": "Ballard",
+      "ceiling_pts": 17,
+      "floor_pts": 3.6,
+      "floor_n": 36,
+      "confidence_mean": 0.55,
+      "confidence_bucket": "medium",
+      "vote_share": 1.0,
+      "is_close_rate": 1.0,
+      "result": "win",
+      "bust": false,
+      "divergence": true,
+      "delta": 5,
+      "decision": {
+        "forced_pick_name": "Erling Haaland",
+        "rationale": "GW1 offers no form history, so the decision hinges on fixtures versus consensus. Salah is the safe, popular home pick, but Haaland's significantly easier fixture (Wolves vs Bournemouth) and lower ownership make him the slight lean for captaincy. This is a genuine toss-up between template safety and fixture-based upside; confidence is moderate because both are defensible.",
+        "candidates": [
+          {
+            "name": "Erling Haaland",
+            "case": "Kindest fixture on paper among premium forwards; Manchester City travel to Wolves, rated the lowest difficulty. Differential option at lower ownership (~17%)."
+          },
+          {
+            "name": "Mohamed Salah",
+            "case": "Most-owned premium (~40% of squads), plays at home to Bournemouth. Template armband choice with home advantage."
+          }
+        ]
+      }
+    },
+    {
+      "gw": 5,
+      "question": "Should I captain the template premium or back form into a tougher fixture in GW5?",
+      "rag_pick": "Haaland",
+      "rag_pts": 9,
+      "crowd_pick": "M.Salah",
+      "crowd_pts": 5,
+      "ceiling_pick": "Gravenberch",
+      "ceiling_pts": 15,
+      "floor_pts": 3.8,
+      "floor_n": 67,
+      "confidence_mean": 0.61,
+      "confidence_bucket": "medium",
+      "vote_share": 1.0,
+      "is_close_rate": 1.0,
+      "result": "win",
+      "bust": false,
+      "divergence": true,
+      "delta": 4,
+      "decision": {
+        "forced_pick_name": "Erling Haaland",
+        "rationale": "This is a genuine form-versus-fixture tension. Haaland's 37-point haul in four weeks is materially better than Salah's 25, and in captaincy decisions, form often outweighs fixture difficulty at the elite level. However, Arsenal away (FDR 5) is a genuine headwind. The notes frame this as a close call between two premiums; Haaland's form edge tips the balance, but Salah remains a legitimate template alternative. Confidence is moderate because the fixture gap is real and Salah's ownership/home advantage are genuine anchors.",
+        "candidates": [
+          {
+            "name": "Erling Haaland",
+            "case": "Superior form: 37 points in GW1\u20134 vs Salah's 25. Despite facing Arsenal away (FDR 5, the toughest fixture on the board), Haaland's hot streak and elite underlying output make him the form play for managers willing to back performance over fixture difficulty."
+          },
+          {
+            "name": "Mohamed Salah",
+            "case": "Template safety: 49% captaincy ownership, home fixture vs Everton (FDR 3, mid difficulty), and steady 25-point return across GW1\u20134. The consensus armband with the kinder matchup, ideal for risk-averse managers or those seeking to stay aligned with the crowd."
+          }
+        ]
+      }
+    },
+    {
+      "gw": 6,
+      "question": "Who should I captain in GW6?",
+      "rag_pick": "Haaland",
+      "rag_pts": 16,
+      "crowd_pick": "Haaland",
+      "crowd_pts": 16,
+      "ceiling_pick": "Alderete",
+      "ceiling_pts": 17,
+      "floor_pts": 3.4,
+      "floor_n": 85,
+      "confidence_mean": 0.95,
+      "confidence_bucket": "high",
+      "vote_share": 1.0,
+      "is_close_rate": 0.0,
+      "result": "tie",
+      "bust": false,
+      "divergence": false,
+      "delta": 0,
+      "decision": {
+        "forced_pick_name": "Erling Haaland",
+        "rationale": "GW6 is a straightforward, low-risk call. Haaland leads on points-to-date, form, and fixture difficulty. He is the crowd's most-captained pick (~46% owned) and the notes explicitly state the case against him is thin. While Semenyo offers a cheaper entry to the same Burnley fixture, Haaland's superior points and form make him the clear premium choice. This is high-confidence territory.",
+        "candidates": [
+          {
+            "name": "Erling Haaland",
+            "case": "46 points to date, 33 points across GW2-5 (strong form), home fixture vs Burnley (FDR 1 \u2014 the single kindest fixture on the board). Clear premium forward with the easiest matchup of the week."
+          },
+          {
+            "name": "Antoine Semenyo",
+            "case": "26 points to date, solid form, shares the same home Burnley fixture (FDR 1) at much lower price and similar ownership (~47%). Cut-price route into the easiest fixture, but significantly fewer points accumulated and weaker form than Haaland."
+          }
+        ]
+      }
+    },
+    {
+      "gw": 8,
+      "question": "Should I captain a differential or template in GW8?",
+      "rag_pick": "Haaland",
+      "rag_pts": 13,
+      "crowd_pick": "Haaland",
+      "crowd_pts": 13,
+      "ceiling_pick": "James",
+      "ceiling_pts": 18,
+      "floor_pts": 3.0,
+      "floor_n": 131,
+      "confidence_mean": 0.85,
+      "confidence_bucket": "high",
+      "vote_share": 1.0,
+      "is_close_rate": 0.0,
+      "result": "tie",
+      "bust": false,
+      "divergence": false,
+      "delta": 0,
+      "decision": {
+        "forced_pick_name": "Erling Haaland",
+        "rationale": "GW8 is framed as a template-versus-differential call, but the notes strongly favour the template. Haaland's points-to-date (70), recent form (46 in last four GWs), and home fixture against Everton make him the clear choice. The alternative differential (Kudus) lacks the form or fixture edge to justify the risk. The notes conclude the safe template armband on Haaland is the stronger play.",
+        "candidates": [
+          {
+            "name": "Erling Haaland",
+            "case": "Leads all players on points-to-date (70), strongest form across last four GWs (46 points), and Manchester City play at home to Everton. Despite 60% ownership, the notes explicitly state the template is 'hard to oppose' and 'the safe template armband on Haaland is the stronger play.'"
+          },
+          {
+            "name": "Mohamed Kudus",
+            "case": "Genuine lower-owned differential at around 33% ownership, playing at home to Aston Villa. Offers a punt alternative if seeking to differentiate from the template, though the notes indicate the differential case is weak this week."
+          }
+        ]
+      }
+    },
+    {
+      "gw": 9,
+      "question": "Does Haaland's tougher fixture in GW9 justify captaining a differential instead?",
+      "rag_pick": "Haaland",
+      "rag_pts": 2,
+      "crowd_pick": "Haaland",
+      "crowd_pts": 2,
+      "ceiling_pick": "Van de Ven",
+      "ceiling_pts": 23,
+      "floor_pts": 3.0,
+      "floor_n": 140,
+      "confidence_mean": 0.83,
+      "confidence_bucket": "high",
+      "vote_share": 1.0,
+      "is_close_rate": 0.0,
+      "result": "tie",
+      "bust": true,
+      "divergence": false,
+      "delta": 0,
+      "decision": {
+        "forced_pick_name": "Erling Haaland",
+        "rationale": "The notes are explicit: despite Haaland's tougher fixture, the template remains the stronger play. His dominant season points tally, red-hot form, and the absence of a compelling differential case (Kudus has reasonable form but nothing that clearly outweighs Haaland's edge) make him the clear captain. The harder trip to Villa does not justify moving off the in-form premium.",
+        "candidates": [
+          {
+            "name": "Erling Haaland",
+            "case": "Runaway season points-leader (83 to date), exceptional recent form (46 points across GW5-8), and despite the harder away fixture at Aston Villa (FDR 4), the notes explicitly state the tougher fixture does not dislodge the template. The numbers do not clearly beat an in-form Haaland even with the difficulty spike."
+          },
+          {
+            "name": "Mohamed Kudus",
+            "case": "The cleanest differential at around 32% ownership, facing the kinder fixture away at Everton (FDR 3) with reasonable form (23 points). The only real lower-owned alternative, but the notes confirm nothing in the numbers clearly beats Haaland."
+          }
+        ]
+      }
+    },
+    {
+      "gw": 11,
+      "question": "Who should I captain in the GW11 Man City vs Liverpool derby?",
+      "rag_pick": "Haaland",
+      "rag_pts": 4,
+      "crowd_pick": "Haaland",
+      "crowd_pts": 4,
+      "ceiling_pick": "Gusto",
+      "ceiling_pts": 15,
+      "floor_pts": 3.1,
+      "floor_n": 154,
+      "confidence_mean": 0.88,
+      "confidence_bucket": "high",
+      "vote_share": 1.0,
+      "is_close_rate": 0.0,
+      "result": "tie",
+      "bust": true,
+      "divergence": false,
+      "delta": 0,
+      "decision": {
+        "forced_pick_name": "Erling Haaland",
+        "rationale": "The notes make this lopsided despite the derby framing. Haaland leads on season points, recent form, and fixture difficulty (home vs away). While Salah offers the narrative of a head-to-head premium clash, the underlying data\u2014form, fixture, and cumulative points\u2014all favour Haaland. This is a high-confidence template call with thin case against.",
+        "candidates": [
+          {
+            "name": "Erling Haaland",
+            "case": "Runaway season points-leader (98 to date), strong recent form (36 across GW7-10), playing at home in a mid-difficulty fixture (FDR 3). The notes explicitly state 'the fixture, the form, and the season numbers all favour Haaland' and call him 'the stronger armband' despite the derby billing."
+          },
+          {
+            "name": "Mohamed Salah",
+            "case": "Premium alternative in the same fixture, but playing away at the highest difficulty on the board (FDR 5) with modest recent form (20 over the last four gameweeks). Ownership has fallen to 23%, making him a lower-owned option, but the notes indicate form and fixture both work against him relative to Haaland."
+          },
+          {
+            "name": "Antoine Semenyo",
+            "case": "City team-mate sharing the home fixture (FDR 3) with solid form (27 points), offering a lower-priced route into the same derby. However, the notes position him as a secondary alternative to Haaland rather than a primary case."
+          }
+        ]
+      }
+    },
+    {
+      "gw": 13,
+      "question": "Should I stick with the template premium in GW13 despite his cooled form?",
+      "rag_pick": "Haaland",
+      "rag_pts": 2,
+      "crowd_pick": "Haaland",
+      "crowd_pts": 2,
+      "ceiling_pick": "Thiaw",
+      "ceiling_pts": 16,
+      "floor_pts": 2.7,
+      "floor_n": 168,
+      "confidence_mean": 0.63,
+      "confidence_bucket": "medium",
+      "vote_share": 1.0,
+      "is_close_rate": 1.0,
+      "result": "tie",
+      "bust": true,
+      "divergence": false,
+      "delta": 0,
+      "decision": {
+        "forced_pick_name": "Erling Haaland",
+        "rationale": "GW13 is a genuine close call between holding the template on a good fixture despite cooled form, or chasing a deep differential's recent points. The notes explicitly state that on pre-deadline numbers Haaland's fixture, ownership, and season dominance keep him the pick, with Bruno Guimaraes the only genuinely in-form alternative. Stick with the template forward, but acknowledge the form dip and Bruno's in-form case as a real counter-argument.",
+        "candidates": [
+          {
+            "name": "Erling Haaland",
+            "case": "Template hold on a good home fixture (Leeds, FDR 2). Season points-leader (104 to date), 69% owned, and the crowd's clear armband. Recent form has cooled (21 across GW9-12), but fixture quality and season dominance keep him the pre-deadline pick."
+          },
+          {
+            "name": "Bruno Guimaraes",
+            "case": "In-form differential with 28 points over the last four gameweeks. Ultra-low ownership at 4% makes him a genuine gamble, but the only genuinely in-form alternative to the template. Away at Everton (FDR 3) is a modest fixture."
+          }
+        ]
+      }
+    },
+    {
+      "gw": 15,
+      "question": "Is the in-form midfielder a better captain than the usual premium in GW15?",
+      "rag_pick": "Foden",
+      "rag_pts": 12,
+      "crowd_pick": "Haaland",
+      "crowd_pts": 2,
+      "ceiling_pick": "B.Fernandes",
+      "ceiling_pts": 18,
+      "floor_pts": 2.7,
+      "floor_n": 182,
+      "confidence_mean": 0.63,
+      "confidence_bucket": "medium",
+      "vote_share": 1.0,
+      "is_close_rate": 1.0,
+      "result": "win",
+      "bust": false,
+      "divergence": true,
+      "delta": 10,
+      "decision": {
+        "forced_pick_name": "Phil Foden",
+        "rationale": "GW15 is a genuine form-versus-pedigree call. Both players share the identical elite home fixture against Sunderland, but Foden's recent form (37 points in four weeks) decisively outpaces Haaland's cooled output (22 points in four weeks). The notes explicitly frame this as a straight comparison where form favours Foden, and his ultra-low ownership (20%) versus Haaland's template status (70%) adds differential appeal. While Haaland's season dominance and fixture quality keep him a credible alternative, the notes support backing the in-form midfielder this week.",
+        "candidates": [
+          {
+            "name": "Phil Foden",
+            "case": "The form midfielder going into GW15, leading the midfield pack with 37 points across the last four gameweeks \u2014 comfortably ahead of Haaland's 22 over the same stretch. He plays the identical home fixture against promoted Sunderland (low difficulty), making him the stronger form pick this week at far lower ownership (around 20% versus Haaland's 70%), offering genuine differential value."
+          },
+          {
+            "name": "Erling Haaland",
+            "case": "The runaway season points-leader (120 to date) with elite pedigree and the same kindest fixture of the week at home to promoted Sunderland. Despite recent cooling (22 points in the last four gameweeks), his season dominance and template status (70% owned) provide the safer, more conventional armband choice."
+          }
+        ]
+      }
+    }
+  ],
+  "aggregate": {
+    "differential": 19,
+    "divergent_gws": [
+      1,
+      5,
+      15
+    ],
+    "record": {
+      "w": 3,
+      "l": 0,
+      "t": 5
+    },
+    "agreement_rate": 0.625,
+    "rag_total": 71,
+    "template_total": 52,
+    "ceiling_total": 139,
+    "floor_total": 25.3,
+    "means": {
+      "rag": 8.9,
+      "template": 6.5,
+      "ceiling": 17.4,
+      "floor": 3.2
+    }
+  },
+  "calibration": {
+    "capture_by_bucket": {
+      "high": {
+        "gws": [
+          6,
+          8,
+          9,
+          11
+        ],
+        "n": 4,
+        "beat_or_match": 1.0,
+        "mean_capture": 0.404,
+        "mean_rag": 8.75,
+        "mean_tmpl": 8.75
+      },
+      "medium": {
+        "gws": [
+          1,
+          5,
+          13,
+          15
+        ],
+        "n": 4,
+        "beat_or_match": 1.0,
+        "mean_capture": 0.43,
+        "mean_rag": 9.0,
+        "mean_tmpl": 4.25
+      },
+      "low": {
+        "gws": [],
+        "n": 0,
+        "beat_or_match": null,
+        "mean_capture": null,
+        "mean_rag": null,
+        "mean_tmpl": null
+      }
+    }
+  }
+}

@@ -139,7 +139,7 @@ Three things worth stating plainly, because they're the reason the numbers above
 - Widen the real corpus toward a sample that supports significance — and a real calibration test.
 - Add an xG-based baseline and a no-RAG LLM baseline (the latter explicitly labelled hindsight-contaminated, since the model's training partly covers the season).
 - Validate the judge against human-labelled examples.
-- A thin interface: an **eval dashboard** (the rigor made visible) and a **decision-support UI** built on the structured output the system already emits.
+- A thin interface: an **eval dashboard** (the rigor made visible) — *built* (`app/dashboard.py`, read-only over the saved JSON) — and a **decision-support UI** built on the structured output the system already emits (still to come).
 
 ---
 
@@ -157,9 +157,11 @@ The retrieval eval (12 cases, k=5) surfaced two classes of failure. They are rep
 
 ```
 fpl-retro-rag-evals/
+├── app/                # read-only Streamlit eval dashboard (reads data/eval_results/)
 ├── assets/             # README charts + their generator (make_charts.py)
 ├── data/
 │   ├── corpus/         # date-stamped pre-deadline GW notes (.md)
+│   ├── eval_results/   # committed eval output (JSON) — the dashboard's only data source
 │   ├── fpl/            # committed FPL API snapshot (the outcome oracle's source)
 │   └── deadlines.json  # authoritative per-GW deadlines (the temporal cutoffs)
 ├── src/
@@ -189,3 +191,13 @@ python playground.py "Who should I captain in GW8?" --gw 8   # poke it manually
 
 python assets/make_charts.py              # regenerate the findings charts
 ```
+
+### Eval dashboard
+
+A read-only Streamlit dashboard visualizes the eval results — the confidence-calibration finding, the divergence wins, retrieval health (with a temporal-filter toggle that makes the scores drop when you turn hindsight protection off), and an expandable per-gameweek breakdown.
+
+```bash
+streamlit run app/dashboard.py
+```
+
+It reads **only** the committed JSON in `data/eval_results/` — it never calls the model and needs **no `ANTHROPIC_API_KEY`**, so it is free to run and safe to deploy as a public link (e.g. [Streamlit Community Cloud](https://streamlit.io/cloud): point it at this repo and `app/dashboard.py`). To refresh the data, re-run the two eval scripts above — they rewrite those JSON files; the dashboard only renders what they saved.

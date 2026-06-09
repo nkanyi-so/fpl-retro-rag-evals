@@ -4,3 +4,9 @@ anthropic
 pydantic
 pyyaml
 python-dotenv
+
+# eval dashboard (app/dashboard.py) — reads saved JSON, needs no ANTHROPIC_API_KEY.
+# altair ships with streamlit; matplotlib (below) only regenerates the README PNGs.
+streamlit
+pandas
+matplotlib
